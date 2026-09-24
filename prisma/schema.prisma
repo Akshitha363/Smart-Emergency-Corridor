@@ -1,0 +1,267 @@
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id            String         @id @default(uuid())
+  email         String         @unique
+  password      String
+  name          String
+  role          String         // AMBULANCE, HOSPITAL, TRAFFIC, SERVICE_PROVIDER, ADMIN
+  station       String?
+  ambulanceId   String?
+  hospitalId    String?
+  responderId   String?
+  createdAt     DateTime       @default(now())
+  updatedAt     DateTime       @updatedAt
+  notifications Notification[]
+}
+
+model Ambulance {
+  id            String          @id @default(uuid())
+  callSign      String          @unique
+  driverName    String
+  contactNumber String
+  currentLat    Float
+  currentLng    Float
+  speed         Float           @default(0.0)
+  status        String          @default("IDLE") // IDLE, EN_ROUTE_PATIENT, EN_ROUTE_HOSPITAL, ARRIVED
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  EmergencyTrip EmergencyTrip[]
+}
+
+model Patient {
+  id            String          @id @default(uuid())
+  patientIdStr  String          @unique
+  age           Int
+  gender        String
+  bloodGroup    String
+  symptoms      String
+  condition     String          // CARDIAC, TRAUMA, BURNS, STROKE, MATERNITY, PEDIATRIC, RESPIRATORY, ACCIDENT, OTHER
+  priority      String          // CRITICAL, HIGH, MEDIUM
+  consciousness String
+  injuryType    String?
+  heartRate     Int
+  spO2          Int
+  sysBp         Int
+  diaBp         Int
+  temp          Float
+  respRate      Int
+  notes         String?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+  EmergencyTrip EmergencyTrip[]
+}
+
+model Hospital {
+  id               String                @id @default(uuid())
+  name             String
+  code             String                @unique
+  lat              Float
+  lng              Float
+  totalBeds        Int
+  emergencyBeds    Int
+  icuBeds          Int
+  availableIcuBeds Int
+  readinessStatus  String                @default("READY") // READY, BUSY, CRITICAL_ONLY, FULL
+  contactPhone     String
+  createdAt        DateTime              @default(now())
+  updatedAt        DateTime              @updatedAt
+  specialties      HospitalSpecialty[]
+  resources        HospitalResource[]
+  trips            EmergencyTrip[]
+  alerts           HospitalAlert[]
+  attempts         TripHospitalAttempt[]
+}
+
+model HospitalSpecialty {
+  id         String   @id @default(uuid())
+  hospitalId String
+  specialty  String   // CARDIOLOGY, TRAUMA, BURNS, NEUROLOGY, MATERNITY, PEDIATRICS, EMERGENCY_SURGERY
+  hospital   Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+}
+
+model HospitalResource {
+  id             String   @id @default(uuid())
+  hospitalId     String
+  resourceType   String   // CATH_LAB, CT_SCAN, MRI, BURN_UNIT, NICU, BLOOD_O_POS, BLOOD_A_POS, BLOOD_BANK
+  availableCount Int      @default(1)
+  hospital       Hospital @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+}
+
+model EmergencyTrip {
+  id                     String                @id @default(uuid())
+  tripCode               String                @unique
+  patientId              String
+  ambulanceId            String
+  hospitalId             String
+  status                 String                @default("INITIATED") // INITIATED, MATCHED, HOSPITAL_ALERTED, HOSPITAL_ACCEPTED, HOSPITAL_REJECTED, REROUTED, EN_ROUTE, ARRIVED, COMPLETED, CANCELLED
+  startLat               Float
+  startLng               Float
+  destLat                Float
+  destLng                Float
+  estimatedTimeSec       Int                   @default(0)
+  estimatedDistanceMeters Int                  @default(0)
+  currentCorridorRangeKm Float                 @default(1.0)
+  routeGeometryJson      String?               // JSON array of [lat, lng] points
+  createdAt              DateTime              @default(now())
+  updatedAt              DateTime              @updatedAt
+
+  patient                Patient               @relation(fields: [patientId], references: [id])
+  ambulance              Ambulance             @relation(fields: [ambulanceId], references: [id])
+  hospital               Hospital              @relation(fields: [hospitalId], references: [id])
+  vitals                 Vitals[]
+  responderAlerts        ResponderAlert[]
+  hospitalAlerts         HospitalAlert[]
+  hospitalAttempts       TripHospitalAttempt[]
+  notifications          Notification[]
+  bottlenecks            TrafficBottleneck[]
+  events                 EmergencyEvent[]
+}
+
+model TripHospitalAttempt {
+  id            String        @id @default(uuid())
+  tripId        String
+  hospitalId    String
+  attemptNumber Int
+  status        String        // PENDING, ACCEPTED, REJECTED
+  reason        String?
+  timestamp     DateTime      @default(now())
+
+  trip          EmergencyTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  hospital      Hospital      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, hospitalId])
+}
+
+model Vitals {
+  id        String        @id @default(uuid())
+  tripId    String
+  heartRate Int
+  spO2      Int
+  sysBp     Int
+  diaBp     Int
+  temp      Float
+  respRate  Int
+  timestamp DateTime      @default(now())
+  trip      EmergencyTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model Responder {
+  id          String           @id @default(uuid())
+  name        String
+  badgeNumber String           @unique
+  type        String           // TRAFFIC_POLICE, SERVICE_PROVIDER, FIRST_RESPONDER, COMMUNITY
+  lat         Float
+  lng         Float
+  heading     Float            @default(0.0)
+  status      String           @default("AVAILABLE") // AVAILABLE, ALERTED, TAKEN_LEAD, ON_SITE, UNAVAILABLE
+  contact     String
+  jurisdiction String?
+  createdAt   DateTime         @default(now())
+  updatedAt   DateTime         @updatedAt
+  alerts      ResponderAlert[]
+}
+
+model ResponderAlert {
+  id                 String        @id @default(uuid())
+  tripId             String
+  responderId        String
+  responderType      String?
+  rangeZone          String        // 0_1_KM, 1_2_KM, 2_3_KM, 3_4_KM, 4_5_KM
+  currentRadius      Float         @default(1.0)
+  reminderCount      Int           @default(1)
+  status             String        @default("SENT") // SENT, ACKNOWLEDGED, ACCEPTED, REJECTED, EXPIRED
+  actionStatus       String        @default("NOTIFIED") // PENDING, NOTIFIED, ACKNOWLEDGED, TAKEN_LEAD, CLEARED, EXPIRED, CANCELLED
+  notifiedAt         DateTime?     @default(now())
+  lastNotifiedAt     DateTime?     @default(now())
+  nextNotificationAt DateTime?
+  acknowledgedAt     DateTime?
+  leadTakenAt        DateTime?
+  clearedAt          DateTime?
+  timestamp          DateTime      @default(now())
+
+  trip               EmergencyTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  responder          Responder     @relation(fields: [responderId], references: [id], onDelete: Cascade)
+
+  @@unique([tripId, responderId])
+}
+
+model TrafficSignal {
+  id     String @id @default(uuid())
+  name   String
+  lat    Float
+  lng    Float
+  status String @default("NORMAL") // NORMAL, CONGESTED, CLEARING, EMERGENCY_CORRIDOR_ACTIVE
+}
+
+model TrafficBottleneck {
+  id        String        @id @default(uuid())
+  tripId    String?
+  name      String
+  lat       Float
+  lng       Float
+  severity  String        @default("HIGH") // MEDIUM, HIGH, SEVERE
+  status    String        @default("ACTIVE") // ACTIVE, RESOLVED
+  createdAt DateTime      @default(now())
+
+  trip      EmergencyTrip? @relation(fields: [tripId], references: [id], onDelete: SetNull)
+}
+
+model HospitalAlert {
+  id         String        @id @default(uuid())
+  tripId     String
+  hospitalId String
+  status     String        @default("PENDING") // PENDING, ACCEPTED, REJECTED, PREPARED
+  timestamp  DateTime      @default(now())
+
+  trip       EmergencyTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+  hospital   Hospital      @relation(fields: [hospitalId], references: [id], onDelete: Cascade)
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String?
+  role      String?  // AMBULANCE, HOSPITAL, TRAFFIC, SERVICE_PROVIDER, ADMIN
+  type      String   // AMBULANCE_APPROACHING, RESPONDER_ALERT, RESPONDER_REMINDER, RESPONDER_RADIUS_EXPANDED, HOSPITAL_INCOMING, HOSPITAL_ACCEPTED, HOSPITAL_REJECTED, HOSPITAL_REROUTED, etc.
+  title     String
+  message   String
+  recipient String?
+  tripId    String?
+  priority  String   @default("INFO") // INFO, SUCCESS, WARNING, CRITICAL
+  read      Boolean  @default(false)
+  metadata  String?  // JSON string
+  createdAt DateTime @default(now())
+
+  user      User?          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  trip      EmergencyTrip? @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
+
+model SystemConfig {
+  id                          String   @id @default("default")
+  initialRadiusKm             Float    @default(1.0)
+  radiusStepKm                Float    @default(1.0)
+  maxRadiusKm                 Float    @default(5.0)
+  reminderIntervalSec         Int      @default(30)
+  escalationTimeoutSec        Int      @default(30)
+  maxHospitalFallbackAttempts Int      @default(5)
+  hospitalWeightsJson         String   @default("{\"specialty\":0.35,\"travelTime\":0.25,\"icu\":0.15,\"equipment\":0.10,\"blood\":0.10,\"readiness\":0.05}")
+  updatedAt                   DateTime @updatedAt
+}
+
+model EmergencyEvent {
+  id        String        @id @default(uuid())
+  tripId    String
+  eventType String
+  message   String
+  metadata  String?
+  createdAt DateTime      @default(now())
+
+  trip      EmergencyTrip @relation(fields: [tripId], references: [id], onDelete: Cascade)
+}
