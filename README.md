@@ -1,122 +1,367 @@
-# CODE PULSE 🚑⚡
-### *EVERY SECOND. EVERY SIGNAL. EVERY LIFE.*
+# 🚑 CODE PULSE
 
-An intelligent emergency-response coordination platform designed to reduce the critical time between an emergency occurring and the patient receiving life-saving medical treatment.
+### Smart Emergency Corridor — Real-Time Emergency Response Coordination Platform
+
+CODE PULSE is a real-time emergency response coordination platform designed to improve coordination between **ambulances, hospitals, traffic police, and administrators** during emergency situations.
+
+The system combines dynamic emergency corridor coordination, route-aware responder discovery, smart hospital matching, real-time communication, and role-based dashboards in one platform.
+
+## 🌐 Live Demo
+
+🔗 **[Open CODE PULSE](https://smart-emergency-corridor.onrender.com/)**
+
+## 🎥 Working Demo & Workflow Video
+
+Watch the complete working demonstration of CODE PULSE, including the emergency corridor, ambulance coordination, hospital matching, traffic police coordination, and role-based dashboards.
+
+▶️ **[Watch the CODE PULSE Workflow Demo](https://drive.google.com/file/d/1jktIkW7O4Pt-l3y0-IzDxQpAwe6R_con/view?usp=sharing)**
 
 ---
 
-## 🌟 Primary Innovation: Dynamic Emergency Corridor
+## ✨ Key Features
 
-Instead of relying on static traffic junctions, **CODE PULSE** creates a moving **Dynamic Emergency Corridor** ahead of the ambulance along its projected route.
+### 🚑 Ambulance Coordination
 
+* Real-time ambulance tracking
+* Emergency request management
+* Dynamic emergency corridor creation
+* Route-aware responder discovery
+* Live GPS updates
+* Emergency status updates
+* Hospital recommendation and navigation
+
+### 🏥 Hospital Coordination
+
+* Hospital availability monitoring
+* Emergency case matching
+* Condition-specific hospital recommendations
+* ICU and bed availability
+* Equipment and specialty matching
+* Blood bank availability
+* Hospital readiness tracking
+
+### 🚦 Traffic Police Coordination
+
+* Emergency route monitoring
+* Traffic coordination
+* Nearby emergency alerts
+* Route assistance for ambulances
+* Real-time emergency status updates
+
+### 👨‍💼 Admin Dashboard
+
+* Monitor emergency operations
+* Manage users and emergency services
+* View system activity
+* Monitor ambulances, hospitals, and traffic coordination
+
+---
+
+## 🚨 Dynamic Emergency Corridor
+
+CODE PULSE uses a **route-aware ascending-distance search** to identify responders and coordinate an emergency corridor.
+
+```text
+Emergency Request
+       │
+       ▼
+  0–1 KM Search
+       │
+       ├── Responder accepts
+       │        │
+       │        ▼
+       │     TAKE LEAD
+       │
+       └── No response
+                │
+                ▼
+           1–2 KM Search
+                │
+                └── No response
+                         │
+                         ▼
+                    2–5 KM Search
 ```
-SOURCE
-  🚑 Ambulance (GPS Updating)
-   \
-    \ ➔ ➔ ➔ DYNAMIC EMERGENCY CORRIDOR (0–1 KM ➔ 1–2 KM AHEAD)
-     \
-      \ ➔ 🏥 BEST MATCHED HOSPITAL
+
+The system expands the search area progressively instead of immediately searching the entire network.
+
+This helps prioritize nearby responders while maintaining a fallback mechanism when no suitable responder is available.
+
+---
+
+## 🏥 Smart Hospital Matching
+
+Hospitals are evaluated using multiple factors to identify suitable emergency destinations.
+
+| Factor                  | Weight |
+| ----------------------- | -----: |
+| Medical Specialty       |    35% |
+| Travel Time & Traffic   |    25% |
+| ICU / Bed Availability  |    15% |
+| Required Equipment      |    10% |
+| Blood Bank / Blood Type |    10% |
+| Hospital Readiness      |     5% |
+
+### Emergency-Specific Matching
+
+Different emergency conditions consider different medical requirements:
+
+* **Cardiac:** Cardiology, Cath Lab, ICU, Blood Bank
+* **Trauma:** Trauma Center, Emergency Surgery, CT
+* **Burns:** Burn Unit, Plastic Surgery, ICU
+* **Stroke:** Neurology, CT/MRI, ICU
+* **Maternity:** Obstetrics, NICU
+
+---
+
+## ⚡ Real-Time Communication
+
+The platform uses **Socket.IO** for real-time communication between system components.
+
+```text
+Ambulance
+    │
+    ├──── Emergency Updates ────► Server
+    │                              │
+    │                              ├──► Hospital
+    │                              │
+    │                              ├──► Traffic Police
+    │                              │
+    │                              └──► Admin
+    │
+    └──── Live Location Updates ─► Server
 ```
 
-### Route-Aware Ascending Distance Search Engine
-- **FIRST RANGE (0 KM ➔ 1 KM Ahead)**: Queries available Traffic Police directly ahead on the ambulance route trajectory.
-  - If responder accepts $\rightarrow$ Marks **TAKE LEAD** $\rightarrow$ Halts search expansion.
-- **SECOND RANGE (1 KM ➔ 2 KM Ahead)**: If no responder found in 0–1 km $\rightarrow$ automatically expands corridor search.
-- **EXPANDING RANGES (2 KM ➔ 5 KM)**: Continuously monitors availability as the ambulance GPS position updates every second.
+This allows important emergency information to be reflected across dashboards without requiring constant manual refreshes.
 
 ---
 
-## 🏗️ System Architecture & Technology Stack
+## 🔄 Application Workflow
 
-**CODE PULSE** is built as **ONE SINGLE UNIFIED APPLICATION**:
-
-- **Frontend**: React + Vite + Leaflet Maps (CartoDB Dark Tiles) + Lucide Icons + Tailwind CSS
-- **Backend**: Node.js + Express.js + Socket.IO (Bi-directional Real-Time Event System)
-- **Database**: SQLite / MySQL managed via **Prisma ORM**
-- **Authentication**: JWT + bcrypt + Role-Based Access Control
-
----
-
-## 👥 Unified User Roles
-
-After logging in, the application automatically displays the dedicated dashboard based on the user's role:
-
-| Role | Demo Credentials | Primary Dashboard Features |
-| :--- | :--- | :--- |
-| **Ambulance Driver / Nurse** | `ambulance@codepulse.com` / `password123` | Patient Intake Wizard, Smart Hospital Selector, Moving Corridor Navigation, IoT Live Vitals Stream |
-| **Hospital Emergency Dept** | `hospital@codepulse.com` / `password123` | Incoming Pre-Alert Queue, Patient Vitals Stream, ER Readiness Toggles (ACCEPT, MARK READY, REJECT) |
-| **Traffic Police Officer** | `police@codepulse.com` / `password123` | Active Emergency Corridor Map, TAKE LEAD Button, Route Clearance & Bottleneck reporter |
-| **System Admin** | `admin@codepulse.com` / `password123` | Central Command Analytics, Matching Weight Configurator, Interactive Demo Control Center |
-
----
-
-## 🏥 Smart Hospital Matching Algorithm
-
-Scored dynamically (0 - 100%) using configurable weights:
-- **Medical Specialty Match**: 35%
-- **Travel Time & Traffic**: 25%
-- **ICU & Bed Availability**: 15%
-- **Required Equipment (Cath Lab, CT Scan, MRI)**: 10%
-- **Blood Bank & Type Match**: 10%
-- **Hospital Readiness Status**: 5%
-
-### Condition-Specific Emergency Optimization:
-- **Cardiac**: Cardiology, Cath Lab, ICU, Blood Bank O+
-- **Trauma**: Trauma Center, Emergency Surgery, CT Scan
-- **Burns**: Burn Unit, Plastic Surgery, ICU
-- **Stroke**: Neurology, CT/MRI, ICU
-- **Maternity**: Obstetrics, NICU
+```text
+Emergency Report
+       │
+       ▼
+Ambulance Assigned
+       │
+       ▼
+Emergency Location Identified
+       │
+       ▼
+Dynamic Corridor Created
+       │
+       ▼
+Nearby Responders Coordinated
+       │
+       ▼
+Emergency Condition Identified
+       │
+       ▼
+Hospitals Evaluated
+       │
+       ▼
+Best-Matching Hospital Selected
+       │
+       ▼
+Traffic Coordination
+       │
+       ▼
+Ambulance Reaches Hospital
+```
 
 ---
 
-## 🚀 Quick Setup & Local Execution
+## 🏗️ System Architecture
+
+```text
+┌─────────────────────────────────────────┐
+│              React Frontend             │
+│                                         │
+│ Ambulance │ Hospital │ Police │ Admin   │
+└───────────────────┬─────────────────────┘
+                    │
+                    │ REST API / Socket.IO
+                    ▼
+┌─────────────────────────────────────────┐
+│          Node.js + Express Server       │
+│                                         │
+│ Authentication │ Emergency Logic        │
+│ Hospital Match │ Real-Time Events       │
+└───────────────────┬─────────────────────┘
+                    │
+                    ▼
+┌─────────────────────────────────────────┐
+│              Prisma ORM                 │
+│                                         │
+│        SQLite / MySQL Database          │
+└─────────────────────────────────────────┘
+```
+
+---
+
+## 🛠️ Tech Stack
+
+| Technology     | Purpose                        |
+| -------------- | ------------------------------ |
+| React          | Frontend interface             |
+| Vite           | Frontend development and build |
+| Tailwind CSS   | UI styling                     |
+| Leaflet        | Interactive maps               |
+| Node.js        | Backend runtime                |
+| Express.js     | REST API server                |
+| Socket.IO      | Real-time communication        |
+| Prisma         | Database ORM                   |
+| SQLite / MySQL | Data storage                   |
+| JWT            | Authentication                 |
+| bcrypt         | Password security              |
+| JavaScript     | Application development        |
+
+---
+
+## 📁 Project Structure
+
+```text
+CODE PULSE/
+│
+├── prisma/
+│   └── Database schema and Prisma configuration
+│
+├── server/
+│   └── Backend and API logic
+│
+├── src/
+│   └── React frontend
+│
+├── .gitignore
+├── index.html
+├── package.json
+├── package-lock.json
+├── postcss.config.js
+├── tailwind.config.js
+├── vite.config.js
+└── README.md
+```
+
+---
+
+## 🚀 Getting Started
 
 ### Prerequisites
-- Node.js `v18+`
-- NPM `v9+`
 
-### 1. Installation
+* Node.js 18+
+* npm 9+
+
+### Installation
+
 ```bash
-# Clone or navigate to directory
-cd codepulse
-
-# Install dependencies
+git clone https://github.com/Akshitha363/Smart-Emergency-Corridor.git
+cd Smart-Emergency-Corridor
 npm install
 ```
 
-### 2. Database Initialization
+### Database Setup
+
 ```bash
-# Push Prisma schema and seed demo dataset (Hyderabad context)
 npm run setup
 ```
 
-### 3. Running the Application
+### Start the Application
+
 ```bash
-# Starts both Express backend (Port 5000) and Vite frontend (Port 3000)
 npm run dev
 ```
 
-Open your browser at:
-**http://localhost:5000** (or `http://localhost:3000` with dev proxy)
+The application can then be accessed through the local development server.
 
 ---
 
-## 🎮 Scripted Demo Walkthrough for Evaluators
+## 🔐 Authentication & Access Control
 
-1. **Log in as Ambulance Driver** (`ambulance@codepulse.com`).
-2. Click **NEW PATIENT INTAKE**. Notice pre-filled **Cardiac Emergency** preset (58M, O+, HR 112, SpO2 91%).
-3. Click **MATCH BEST HOSPITALS**. Notice **Apollo Hospitals Jubilee Hills** ranked #1 with **83% Suitability Score**.
-4. Click **SELECT & SEND PRE-ALERT**.
-5. Switch tab or log in as **Hospital ER** (`hospital@codepulse.com`). Observe incoming pre-alert card and click **ACCEPT & MARK READY**.
-6. Switch back to Ambulance Cockpit. See **"✅ HOSPITAL CONFIRMED READY"**.
-7. Click **START DEMO** in the Admin Control Panel. Observe ambulance move along route on Leaflet Map.
-8. Watch the blue/purple **Dynamic Emergency Corridor** move 0–2.0 KM ahead of the ambulance.
-9. Click **SIMULATE RESPONDER AVAILABLE** in Demo Controller. Inspector Rajesh appears 1.2 KM ahead on corridor.
-10. Log in as **Traffic Police** (`police@codepulse.com`) and click **⭐ TAKE LEAD**.
-11. Click **SIMULATE HOSPITAL UNAVAILABLE** in Demo Controller. System triggers **⚠️ PRIMARY HOSPITAL UNAVAILABLE**, auto-calculates **Care Hospitals Gachibowli** as best fallback, and updates route polyline seamlessly.
-12. Ambulance arrives at hospital bay $\rightarrow$ Emergency analytics updated.
+CODE PULSE uses role-based authentication to provide different functionality to different users.
+
+```text
+User Login
+    │
+    ▼
+Authentication
+    │
+    ▼
+Role Verification
+    │
+    ├── Ambulance
+    ├── Hospital
+    ├── Traffic Police
+    └── Admin
+```
+
+Each role receives a dashboard and functionality relevant to its responsibilities.
+
+---
+
+## 🎯 Demonstration Features
+
+The working demonstration showcases:
+
+* Emergency request creation
+* Ambulance dashboard
+* Dynamic emergency corridor
+* Real-time location updates
+* Responder coordination
+* Hospital matching
+* Emergency-condition-based hospital selection
+* Traffic police coordination
+* Role-based dashboards
+* Real-time system updates
+
+▶️ **[View the complete workflow demonstration](https://drive.google.com/file/d/1jktIkW7O4Pt-l3y0-IzDxQpAwe6R_con/view?usp=sharing)**
+
+---
+
+## 🔮 Future Enhancements
+
+* Real-world traffic API integration
+* Advanced route optimization
+* GPS and navigation service integration
+* Push notifications
+* Mobile application for emergency responders
+* Hospital API integration
+* Advanced emergency analytics
+* Cloud-based scalable infrastructure
+* Production-grade security and monitoring
+
+---
+
+## 📚 Learning Outcomes
+
+Through this project, I gained practical experience in:
+
+* Full-stack web application development
+* REST API development
+* Real-time communication using Socket.IO
+* Role-based authentication and authorization
+* Interactive map integration
+* Database design and ORM usage
+* Emergency workflow modelling
+* Multi-role dashboard development
+* Deployment of a full-stack application
+
+---
+
+## 👩‍💻 Author
+
+**Akshitha Gasikanti**
+
+B.Tech Information Technology
+VNR Vignana Jyothi Institute of Engineering & Technology
+
+GitHub: [Akshitha363](https://github.com/Akshitha363)
 
 ---
 
 ## 📄 License
-Designed & Built for CODE PULSE Intelligent Emergency Coordination.
+
+No license specified.
+
+---
+
+> **Note:** CODE PULSE is a student/hackathon prototype developed for demonstration and educational purposes. It is not intended for real-world medical, navigation, traffic-control, or emergency-response decisions.
